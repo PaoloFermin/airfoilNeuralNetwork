@@ -12,20 +12,34 @@ print(data)
 #normalize data
 from sklearn import preprocessing
 
+'''
 scaler = preprocessing.MinMaxScaler(feature_range=(-1,1))
 data_scaled = scaler.fit_transform(data.loc[:,['Ux', 'Uy']].values.astype(float))
 df_normalized = pd.DataFrame(data_scaled)
 df_normalized['Cd'] = data.loc[:,'Cd']
 df_normalized['Cl'] = data.loc[:,'Cl']
+'''
 
+def rescale(col, newMin, newMax):
+	#minmaxscaler: x = newmin + (x - xmin)(newmax -newmin) / (xmax -xmin)
+	
+	return newMin + (col - col.min()) * (newMax - newMin) / (col.max() - col.min())
+
+df_normalized = data
+df_normalized['U'] = rescale(data['U'], -1,1)
+df_normalized['angle'] = rescale(data['angle'], -0.5, 0.5)
+df_normalized['Ux'] = rescale(data['Ux'], -1, 1)
+df_normalized['Uy'] = rescale(data['Uy'], -1, 1)
 #df_normalized = pos_normalized.join(neg_normalized) 
-df_normalized.columns = ['Ux','Uy','Cd','Cl']
+#df_normalized.columns = ['Ux','Uy','Cd','Cl']
 
 print("normalized data:\n")
 print(df_normalized)
 
-train_x = df_normalized[['Ux','Uy']]
-train_y = df_normalized[['Cl','Cd']]	#the target column
+inputs = ['Ux', 'Uy']
+
+train_x = df_normalized[inputs]
+train_y = df_normalized[['Cd','Cl']]	#the target column
 
 
 #get number of columns in training data
@@ -52,7 +66,7 @@ from sklearn.model_selection import train_test_split
 x_train, x_test, y_train, y_test = train_test_split(train_x, train_y, test_size = 0.2)
 
 from keras.callbacks import EarlyStopping, TensorBoard
-#early_stopping_monitor = EarlyStopping(patience=3) #stop training when it won't improve anymore
+early_stopping_monitor = EarlyStopping(patience=150) #stop training when it won't improve anymore
 
 import os
 
@@ -74,7 +88,7 @@ model_for_pruning = tfmot.sparsity.keras.prune_low_magnitude(model, pruning_sche
 '''
 
 #train model
-fit = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10000, callbacks=[tb])
+fit = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10000, callbacks=[tb, early_stopping_monitor])
 
 print("x_test = ")
 print(x_test)
@@ -95,7 +109,6 @@ output['pred_Cl'] = pred_Cl
 
 print(output)
 
-
 def reverse_normalized(value, df, column):
 	#normalized_value * (max(x) - min(x)) + min(x)
 		
@@ -106,24 +119,33 @@ def reverse_normalized(value, df, column):
 	
 	return value * (colMax - colMin) + colMin	
 
+'''
 real_Ux = reverse_normalized(x_test['Ux'], data, 'Ux')
-print("real Ux = " + str(real_Ux)) 
+print("unscaled Ux = " + str(real_Ux)) 
 
 real_Uy = reverse_normalized(x_test['Uy'], data, 'Uy')
-print("real Uy = " + str(real_Uy)) 
+print("unscaled Uy = " + str(real_Uy)) 
 
-real_Cd = reverse_normalized(pred_Cd, data, 'Cd')
-print("real Cd = " + str(real_Cd))	
+unscaled_Cd = reverse_normalized(pred_Cd, data, 'Cd')
+print("unscaled Cd = " + str(real_Cd))	
 
-real_Cl = reverse_normalized(pred_Cl, data, 'Cl')
-print("real Cl = " + str(real_Cl))
+unscaled_Cl = reverse_normalized(pred_Cl, data, 'Cl')
+print("unscaled Cl = " + str(real_Cl))
+'''
 
-output['real_Ux'] = real_Ux
-output['real_Uy'] = real_Uy
-output['real_Cd'] = real_Cd
-output['real_Cl'] = real_Cl
+
+output['unscaled_%s'%inputs[0]] = rescale(x_test[inputs[0]], data.loc[:, inputs[0]].min(), data.loc[:, inputs[0]].max()) 
+output['unscaled_%s'%inputs[1]] = rescale(x_test[inputs[1]], data.loc[:, inputs[1]].min(), data.loc[:, inputs[1]].max()) 
+
+output['unscaled_Cd'] = pred_Cd
+output['unscaled_Cl'] = pred_Cl
 
 #output.rename(columns={0:'case number'}, inplace=True)
+
+
+
+#output['unscaled_Ux'] = scaler.inverse_transform(data_scaled)
+#output['unscaled_Uy'] = scaler.inverse_transform({1, output.loc[:,'Uy']})
 
 
 #print(output)
@@ -132,8 +154,8 @@ output['real_Cl'] = real_Cl
 output.to_csv('./results_nn.csv') 
 	
 #plot regression values during training
-import matplotlib.pyplot as plt
-print(fit.history.keys())
+#import matplotlib.pyplot as plt
+#print(fit.history.keys())
 
 
 
