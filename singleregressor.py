@@ -41,7 +41,7 @@ print("normalized data:\n")
 print(df_normalized)
 
 inputs = ['U', 'angle']
-outputs = ['Cl']
+outputs = ['Cd']
 
 train_x = df_normalized[inputs]
 train_y = df_normalized[outputs]	#the target column
@@ -55,7 +55,7 @@ model = Sequential()
 model.add(Dense(24, kernel_initializer='normal', activation='relu', input_shape=(n_cols,))) #add input layer and first hidden layer
 #model.add(Dense(24, kernel_initializer='uniform', activation='relu'))
 model.add(Dense(8, kernel_initializer='normal', activation='relu')) 
-model.add(Dense(1))#output layer
+model.add(Dense(len(outputs)))#output layer
 
 #add optimizer
 from keras import optimizers
@@ -108,9 +108,12 @@ print(predictions)
 results = x_test
 
 for i in range(len(outputs)):
-	results['pred_%s'%outputs[i]] = predictions[:, i]
-	results['unscaled_input_%s'%inputs[i]] = rescale(x_test[inputs[i]], data[inputs[i]].min(), data[inputs[i]].max()) 
-
+	pred = 'pred_%s'%outputs[i]
+	real = 'real_%s'%outputs[i]
+	results[pred] = predictions[:, i]
+	results[real] = y_test
+	#results['unscaled_input_%s'%inputs[i]] = rescale(x_test[inputs[i]], data[inputs[i]].min(), data[inputs[i]].max()) 
+	results['error_%s (%%)'%outputs[i]] = ((results[pred] - results[real]) / (results[real])) * 100 
 #output.rename(columns={0:'case number'}, inplace=True)
 
 
@@ -119,15 +122,11 @@ for i in range(len(outputs)):
 #output['unscaled_Uy'] = scaler.inverse_transform({1, output.loc[:,'Uy']})
 
 
-#print(output)
+print(results)
 
 #write output to csv file
 results.to_csv('./results_nn.csv', index=False) 
 	
-#plot regression values during training
-#import matplotlib.pyplot as plt
-#print(fit.history.keys())
-
 
 
 '''
