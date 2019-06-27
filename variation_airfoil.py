@@ -36,7 +36,7 @@ log = open("AirfoilParameterVariationLog", "w")
 log.close()
 logTable = open("results.csv", "w")
 writer = csv.writer(logTable)
-writer.writerow(['Ux', 'Uy', 'Cd', 'Cl'])
+writer.writerow(['Ux', 'Uy', 'U', 'angle', 'Cd', 'Cl'])
 logTable.close()
 
 for mach in machs:
@@ -86,7 +86,7 @@ for mach in machs:
 			log.close()
 
 		with open("results.csv", "a") as logTable: 
-			output = [Ux, Uy, Cd, Cl]
+			output = [Ux, Uy, mach*speedOfSound, angle, Cd, Cl]
 			writer = csv.writer(logTable)
 			writer.writerow(output)
 			logTable.close()
