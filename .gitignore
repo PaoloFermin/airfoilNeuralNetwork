@@ -1,0 +1,11 @@
+airfoil-*
+logs_nn
+old_logs
+test_nn
+testSeparator
+results*
+PyFoam*
+AirfoilParameterVariationLog
+*.logfile
+*.foam
+*results
