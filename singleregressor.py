@@ -7,7 +7,7 @@ import pandas as pd
 
 #load in data and format it for training
 data = pd.read_csv('results.csv')
-print(data)
+#print(data)
 
 #normalize data
 from sklearn import preprocessing
@@ -22,10 +22,12 @@ df_normalized['Cl'] = data.loc[:,'Cl']
 
 def rescale(col, newMin, newMax):
 	#minmaxscaler: x = newmin + (x - xmin)(newmax -newmin) / (xmax -xmin)
-	
-	return newMin + (col - col.min()) * (newMax - newMin) / (col.max() - col.min())
+	print("scaling %s to min %d and max %d" % (col.head, newMin, newMax))	
+	x = newMin + (col - col.min()) * (newMax - newMin) / (col.max() - col.min())
+	print(x)
+	return x
 
-df_normalized = data
+df_normalized = data.copy() #separate copy from original
 df_normalized['U'] = rescale(data['U'], -1, 1)
 df_normalized['angle'] = rescale(data['angle'], -1, 1)
 df_normalized['Ux'] = rescale(data['Ux'], -1, 1)
@@ -33,13 +35,16 @@ df_normalized['Uy'] = rescale(data['Uy'], -1, 1)
 #df_normalized = pos_normalized.join(neg_normalized) 
 #df_normalized.columns = ['Ux','Uy','Cd','Cl']
 
+print("original data:\n")
+print(data)
 print("normalized data:\n")
 print(df_normalized)
 
 inputs = ['U', 'angle']
+outputs = ['Cl']
 
 train_x = df_normalized[inputs]
-train_y = df_normalized[['Cd','Cl']]	#the target column
+train_y = df_normalized[outputs]	#the target column
 
 
 #get number of columns in training data
@@ -50,7 +55,7 @@ model = Sequential()
 model.add(Dense(24, kernel_initializer='normal', activation='relu', input_shape=(n_cols,))) #add input layer and first hidden layer
 #model.add(Dense(24, kernel_initializer='uniform', activation='relu'))
 model.add(Dense(8, kernel_initializer='normal', activation='relu')) 
-model.add(Dense(2))#output layer
+model.add(Dense(1))#output layer
 
 #add optimizer
 from keras import optimizers
@@ -96,49 +101,15 @@ print(type(x_test))
 print("y_test = ")
 print(y_test)
 
-test_outputs = model.predict(x_test) #returns numpy array of predictions
-print(test_outputs)
+predictions = model.predict(x_test) #returns numpy array of predictions
+print(predictions)
 
 #get test x values and predicted y values into one dataframe and display
-output = x_test
-pred_Cd = test_outputs[:, 0]
-pred_Cl = test_outputs[:, 1]
- 
-output['pred_Cd'] = pred_Cd
-output['pred_Cl'] = pred_Cl
+results = x_test
 
-print(output)
-
-def reverse_normalized(value, df, column):
-	#normalized_value * (max(x) - min(x)) + min(x)
-		
-	colMin = df[column].min()
-	colMax = df[column].max()
-	print("min = " + str(colMin))
-	print("max = " + str(colMax))
-	
-	return value * (colMax - colMin) + colMin	
-
-'''
-real_Ux = reverse_normalized(x_test['Ux'], data, 'Ux')
-print("unscaled Ux = " + str(real_Ux)) 
-
-real_Uy = reverse_normalized(x_test['Uy'], data, 'Uy')
-print("unscaled Uy = " + str(real_Uy)) 
-
-unscaled_Cd = reverse_normalized(pred_Cd, data, 'Cd')
-print("unscaled Cd = " + str(real_Cd))	
-
-unscaled_Cl = reverse_normalized(pred_Cl, data, 'Cl')
-print("unscaled Cl = " + str(real_Cl))
-'''
-
-
-output['unscaled_%s'%inputs[0]] = rescale(x_test[inputs[0]], data.loc[:, inputs[0]].min(), data.loc[:, inputs[0]].max()) 
-output['unscaled_%s'%inputs[1]] = rescale(x_test[inputs[1]], data.loc[:, inputs[1]].min(), data.loc[:, inputs[1]].max()) 
-
-output['unscaled_Cd'] = pred_Cd
-output['unscaled_Cl'] = pred_Cl
+for i in range(len(outputs)):
+	results['pred_%s'%outputs[i]] = predictions[:, i]
+	results['unscaled_input_%s'%inputs[i]] = rescale(x_test[inputs[i]], data[inputs[i]].min(), data[inputs[i]].max()) 
 
 #output.rename(columns={0:'case number'}, inplace=True)
 
@@ -151,7 +122,7 @@ output['unscaled_Cl'] = pred_Cl
 #print(output)
 
 #write output to csv file
-output.to_csv('./results_nn.csv') 
+results.to_csv('./results_nn.csv', index=False) 
 	
 #plot regression values during training
 #import matplotlib.pyplot as plt
