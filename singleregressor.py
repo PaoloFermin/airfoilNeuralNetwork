@@ -10,21 +10,12 @@ data = pd.read_csv('results.csv')
 #print(data)
 
 #normalize data
-from sklearn import preprocessing
-
-'''
-scaler = preprocessing.MinMaxScaler(feature_range=(-1,1))
-data_scaled = scaler.fit_transform(data.loc[:,['Ux', 'Uy']].values.astype(float))
-df_normalized = pd.DataFrame(data_scaled)
-df_normalized['Cd'] = data.loc[:,'Cd']
-df_normalized['Cl'] = data.loc[:,'Cl']
-'''
 
 def rescale(col, newMin, newMax):
 	#minmaxscaler: x = newmin + (x - xmin)(newmax -newmin) / (xmax -xmin)
-	print("scaling %s to min %d and max %d" % (col.head, newMin, newMax))	
+	#print("scaling %s to min %d and max %d" % (col.head, newMin, newMax))	
 	x = newMin + (col - col.min()) * (newMax - newMin) / (col.max() - col.min())
-	print(x)
+	#print(x)
 	return x
 
 df_normalized = data.copy() #separate copy from original
@@ -32,8 +23,8 @@ df_normalized['U'] = rescale(data['U'], -1, 1)
 df_normalized['angle'] = rescale(data['angle'], -1, 1)
 df_normalized['Ux'] = rescale(data['Ux'], -1, 1)
 df_normalized['Uy'] = rescale(data['Uy'], -1, 1)
-#df_normalized = pos_normalized.join(neg_normalized) 
-#df_normalized.columns = ['Ux','Uy','Cd','Cl']
+df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
+df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
 
 print("original data:\n")
 print(data)
@@ -62,7 +53,7 @@ from keras import optimizers
 adam = optimizers.Adam(lr=0.01)
 
 #compile model
-model.compile(optimizer=adam, loss='mean_squared_error')
+model.compile(optimizer=adam, loss='logcosh')
 
 print(model.summary())
 
@@ -81,40 +72,30 @@ while os.path.exists('./logs_nn/%s' % i):
 logdir = './logs_nn/%s' % i
 tb = TensorBoard(log_dir=logdir)
 
-'''
-import tensorflow_model_optimization as tfmot
-
-#set up model pruning
-pruning_schedule = tfmot.sparsity.keras.PolynomialDecay(
-	initial_sparsity=0.0, final_sparsity=0.5, 
-	begin_step=2000, end_step=4000)
-
-model_for_pruning = tfmot.sparsity.keras.prune_low_magnitude(model, pruning_schedule=pruning_schedule)
-'''
 
 #train model
-fit = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10000, callbacks=[tb, early_stopping_monitor])
+fit = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10000, callbacks=[tb, early_stopping_monitor], verbose=False)
 
 print("x_test = ")
 print(x_test)
-print(type(x_test))
 print("y_test = ")
 print(y_test)
+print(type(y_test))
 
 predictions = model.predict(x_test) #returns numpy array of predictions
 print(predictions)
+
 
 #get test x values and predicted y values into one dataframe and display
 results = x_test
 
 for i in range(len(outputs)):
-	pred = 'pred_%s'%outputs[i]
 	real = 'real_%s'%outputs[i]
-	results[pred] = predictions[:, i]
-	results[real] = y_test
-	#results['unscaled_input_%s'%inputs[i]] = rescale(x_test[inputs[i]], data[inputs[i]].min(), data[inputs[i]].max()) 
+	pred = 'pred_%s'%outputs[i]
+	results[real] = rescale(y_test[outputs[i]], data[outputs[i]].min(), data[outputs[i]].max())
+	results[pred] = rescale(predictions[:, i], data[outputs[i]].min(), data[outputs[i]].max())
+	
 	results['error_%s (%%)'%outputs[i]] = ((results[pred] - results[real]) / (results[real])) * 100 
-#output.rename(columns={0:'case number'}, inplace=True)
 
 
 
@@ -126,11 +107,4 @@ print(results)
 
 #write output to csv file
 results.to_csv('./results_nn.csv', index=False) 
-	
 
-
-'''
-real_outputs = output[['pred_Cd','pred_Cl']].apply(reverse_normalized, axis=1)
-print("real output: ")
-print(real_outputs)
-'''

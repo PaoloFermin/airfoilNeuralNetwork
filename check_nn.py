@@ -13,10 +13,10 @@ print(nn_output)
 #test_cases = real_data.iloc[nn_output['case number'],:].astype(float).reset_index()
 
 #get only Cd and Cl data from both dataframes
-compare = nn_output.filter(regex='unscaled_input')
+#compare = nn_output.filter(regex='unscaled_input')
 #compare.join(nn_output.filter(regex='unscaled_input'))
 
-print(compare)
+#print(compare)
 
 #compare = test_cases.loc[:,['Cd','Cl']].join(nn_output.loc[:,['unscaled_Cd','unscaled_Cl']].rename(columns={'unscaled_Cd':'pred_Cd', 'unscaled_Cl':'pred_Cl'}))
 
