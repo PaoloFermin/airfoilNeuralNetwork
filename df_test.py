@@ -2,26 +2,24 @@ import pandas as pd
 import numpy as np
 
 data = pd.read_csv('results.csv')
+print(data)
 
 def rescale(col, newMin, newMax):
-	print(col)	
-	print(col.min())
-	print(type(col))	
-	a = col - col.min()	
-	b = col.max() - col.min()	
-	c = newMax - newMin	
-	d = a*c / b
-#	return newMin + d
-	return ((col - col.min()) * (newMax - newMin) / (col.max() - col.min())) + newMin
+	#minmaxscaler: x = newmin + (x - xmin)(newmax -newmin) / (xmax -xmin)
+	#print("scaling %s to min %d and max %d" % (col.head, newMin, newMax))	
+	x = newMin + (((col - col.min()) * (newMax - newMin)) / (col.max() - col.min()))
+	#print(x)
+	return x
 
-np_rescale = np.frompyfunc(rescale, 3, 1)
+target = 'Cl'
 
-#data.apply(np_rescale, args=(data['U'],-1, 1))
+scaled_data = rescale(data[target], -1, 1)
+results = pd.DataFrame(scaled_data)
+#results.rename(columns={target:'scaled_data'})
+results['unscaled_data'] = rescale(scaled_data, data[target].min(), data[target].max())
 
-#scaled_data = data['U'].apply(rescale, kwargs=(value=data['U'], newMin=0,newMax=1)) 
+print(results)
 
-scaled_data = rescale(data['U'], -1, 1)
-
-
-print(scaled_data)
+nn_data = pd.read_csv('results_nn.csv')
+print(nn_data)
 
