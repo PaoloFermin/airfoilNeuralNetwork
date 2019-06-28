@@ -68,7 +68,7 @@ print("normalized data:\n")
 print(df_normalized)
 
 train_x = df_normalized[inputs]
-train_y = df_normalized[outputs]	#the target column
+train_y = data[outputs]	#the target column
 
 #split between training and testing data
 from sklearn.model_selection import train_test_split 
@@ -113,7 +113,6 @@ results = x_test
 analyzed_results = pd.DataFrame(cases)
 
 for i in range(len(outputs)):
-	orig = 'orig_%s'%outputs[i]
 	real = 'real_%s'%outputs[i]
 	pred = 'pred_%s'%outputs[i]
 	err = 'error_%s (%%)'%outputs[i]
@@ -122,11 +121,15 @@ for i in range(len(outputs)):
 	temp = data.iloc[y_test.index.values,:]
 	results[real] = temp.loc[:, outputs[i]]
 
-	#results[real] = rescale(y_test[outputs[i]], data[outputs[i]].min(), data[outputs[i]].max())
-	results[pred] = rescale(predictions[:, i], data[outputs[i]].min(), data[outputs[i]].max())
-	#results[real] = rescale(y_test[outputs[i]], -1, 1, reverse=True, original=data[outputs[i]])
-	#results[pred] = rescale(predictions[:, i], -1, 1, reverse=True, original=data[outputs[i]])
+	#use this if output scaling
+	#results[pred] = rescale(predictions[:, i], data[outputs[i]].min(), data[outputs[i]].max())
 	
+	#use this if no output scaling
+	results[pred] = predictions[:, i]
+
+	#results[real] = rescale(y_test[outputs[i]], -1, 1, reverse=True, original=data[outputs[i]])
+	#results[pred] = rescale(predictions[:, i], -1, 1, reverse=True, original=data[outputs[i]])	
+
 	results[err] = abs((results[pred] - results[real]) / (results[real])) * 100 
 	trimmed_results = results[(np.abs(stats.zscore(results)) < 3).all(axis=1)]
 	print("Average error of %s is %.2f" % (outputs[i], results[err].mean()))
