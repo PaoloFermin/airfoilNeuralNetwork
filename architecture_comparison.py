@@ -45,28 +45,22 @@ data = pd.read_csv('results.csv')
 def rescale(col, newMin, newMax, reverse=False, original=None):
 	#minmaxscaler: x = newmin + (x - xmin)(newmax -newmin) / (xmax -xmin)
 	#print("scaling %s to min %d and max %d" % (col.head, newMin, newMax))	
-	if reverse:
-		x = ((col * (original.max() - original.min()) - newMin) / (newMax - newMin)) + original.min()
-	else:
-		x = newMin + (((col - col.min()) * (newMax - newMin)) / (col.max() - col.min()))
+	#if reverse:
+		#x = ((col * (original.max() - original.min()) - newMin) / (newMax - newMin)) + original.min()
+	#else:
+	x = newMin + (((col - col.min()) * (newMax - newMin)) / (col.max() - col.min()))
 	#print(x)
 	
 	#x = scaler.fit_transform(col.values.astype(float)) 
 	return x
-
-def rescale_output(col, newMin, newMax, reverse=False, original=None):
-	if reverse:
-		return col / 100
-	else:
-		return col * 100
 
 df_normalized = data.copy() #separate copy from original
 df_normalized['U'] = rescale(data['U'], -1, 1)
 df_normalized['angle'] = rescale(data['angle'], -1, 1)
 df_normalized['Ux'] = rescale(data['Ux'], -1, 1)
 df_normalized['Uy'] = rescale(data['Uy'], -1, 1)
-df_normalized['Cl'] = rescale_output(data['Cl'], -1, 1)
-df_normalized['Cd'] = rescale_output(data['Cd'], -1, 1)
+df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
+df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
 
 print("original data:\n")
 print(data)
@@ -102,13 +96,13 @@ print(model.summary())
 #train model
 fit = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10000, callbacks=[tb, early_stopping_monitor], verbose=False)
 
-'''
+
 print("x_test = ")
 print(x_test)
 print("y_test = ")
 print(y_test)
 print(type(y_test))
-'''
+
 
 #GET RESULTS
 predictions = model.predict(x_test) #returns numpy array of predictions
@@ -119,13 +113,19 @@ results = x_test
 analyzed_results = pd.DataFrame(cases)
 
 for i in range(len(outputs)):
+	orig = 'orig_%s'%outputs[i]
 	real = 'real_%s'%outputs[i]
 	pred = 'pred_%s'%outputs[i]
 	err = 'error_%s (%%)'%outputs[i]
+	
+	#get original y values
+	temp = data.iloc[y_test.index.values,:]
+	results[real] = temp.loc[:, outputs[i]]
+
 	#results[real] = rescale(y_test[outputs[i]], data[outputs[i]].min(), data[outputs[i]].max())
-	#results[pred] = rescale(predictions[:, i], data[outputs[i]].min(), data[outputs[i]].max())
-	results[real] = rescale_output(y_test[outputs[i]], -1, 1, reverse=True, original=data[outputs[i]])
-	results[pred] = rescale_output(predictions[:, i], -1, 1, reverse=True, original=data[outputs[i]])
+	results[pred] = rescale(predictions[:, i], data[outputs[i]].min(), data[outputs[i]].max())
+	#results[real] = rescale(y_test[outputs[i]], -1, 1, reverse=True, original=data[outputs[i]])
+	#results[pred] = rescale(predictions[:, i], -1, 1, reverse=True, original=data[outputs[i]])
 	
 	results[err] = abs((results[pred] - results[real]) / (results[real])) * 100 
 	trimmed_results = results[(np.abs(stats.zscore(results)) < 3).all(axis=1)]
