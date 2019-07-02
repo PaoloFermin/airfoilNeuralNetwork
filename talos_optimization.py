@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from numpy import mean
 import talos as ta
-from talos import Evaluate, Predict
+from talos import Evaluate, Predict, Deploy, live
 import os
 
 #remove pesky deprecation warnings which I should probably care about but meh
@@ -28,9 +28,9 @@ outputs = ['Cd', 'Cl']
 p = {
 	'first_neuron': [4, 8, 16, 32],
 	'second_neuron': [8, 16, 32],
-	'losses': ['mean_absolute_error'],
-	'epochs': [5000, 10000, 15000],
- 	'lr': [0.001, 0.01]
+	'losses': ['mean_absolute_error', 'mean_squared_error'],
+	'epochs': [15000],
+ 	'lr': [0.001, 0.0001]
 }
 	
 #add callbacks
@@ -81,7 +81,7 @@ x_train, x_test, y_train, y_test = train_test_split(train_x, train_y, test_size 
 
 #get number of columns in training data
 n_cols = train_x.shape[1]
-print("number of inputs columns: " + str(n_cols))
+print("number of input columns: " + str(n_cols))
 
 #CREATE AND BUILD MODEL
 
@@ -101,7 +101,12 @@ def create_model(x_train, y_train, x_test, y_test, params):
 	print(model.summary())
 
 	#train model
-	fit = model.fit(x_train, y_train, validation_split=0.2, epochs=params['epochs'], verbose=False)
+	fit = model.fit(x_train, y_train, 
+		validation_split=0.2, 
+		epochs=params['epochs'], 
+		verbose=False,
+		callbacks=[live()]
+	)
 
 	return fit, model
 
@@ -113,7 +118,10 @@ t = ta.Scan(
 	model=create_model,
 	dataset_name='talos_airfoil',
 	experiment_no='1',
-	grid_downsample=0.25
+	reduction_method='correlation', 
+	reduction_interval=25, 
+	reduction_metric='val_loss',
+	reduce_loss=True
 )
 	
 print(t.details)
@@ -121,89 +129,34 @@ print(t.details)
 #report results
 r = ta.Reporting(t)
 
-print(r.data)
+print(r.data)	#returns a dataframe
 print(r.best_params(metric='val_loss', ascending=True))
 
 print("sorted results: ")
 results = r.table(metric='val_loss', ascending=True)
-print(results)
-print(type(results))
+print(results)	#returns a dataframe
 #r.plot_line()
 
-p = Predict(t)
+def best_model_by_loss(scan, metric, loss):
+
+	isolated_df = scan.data.loc[scan.data['losses']==loss,:]
+	best = isolated_df.sort_values(metric, ascending=True).iloc[0].name
+	
+	return best
+
+
+#p = Predict(t)
 
 print(t.best_model(metric='val_loss'))
 
 #p.predict(x_test)
 
-#evaluate predictions
+#evaluate models based on test dataset
 e = Evaluate(t)
 
-evaluation = e.evaluate(x_test, y_test, metric='val_loss', asc=True, mode='regression', folds=10)
-print("mean error: " + str(mean(evaluation)))
+for loss in p['losses']:
+	print("mean error for %s is %.6f" % (loss, mean(e.evaluate(x_test, y_test, model_id=best_model_by_loss(t, 'val_loss', loss), metric='val_loss', asc=True, mode='regression', folds=10))))
+
+Deploy(t, 'optimized_airfoil_nn', metric='val_loss', asc=True)
 
 
-'''
-for case in cases:
-	
-	tf.keras.backend.clear_session()
-	#graph is a platform for creating a tf model
-	#reset the graph for each case
-	graph = tf.Graph()
-
-
-	with tf.Session(graph=graph):
-		
-		#create model
-		create_model(case)
-		
-		#train model
-		train_model()
-
-		#GET RESULTS
-		predictions = model.predict(x_test) #returns numpy array of predictions
-		#print(predictions)
-
-		#get test x values and predicted y values into one dataframe and display
-		results = x_test
-
-
-		for i in range(len(outputs)):
-			real = 'real_%s'%outputs[i]
-			pred = 'pred_%s'%outputs[i]
-			err = 'error_%s (%%)'%outputs[i]
-			
-			#get original y values
-			temp = data.iloc[y_test.index.values,:]
-			results[real] = temp.loc[:, outputs[i]]
-
-			#use this if output scaling
-			results[pred] = rescale(predictions[:, i], data[outputs[i]].min(), data[outputs[i]].max())
-			
-			#use this if no output scaling
-			#results[pred] = predictions[:, i]
-
-			#results[real] = rescale(y_test[outputs[i]], -1, 1, reverse=True, original=data[outputs[i]])
-			#results[pred] = rescale(predictions[:, i], -1, 1, reverse=True, original=data[outputs[i]])	
-
-			results[err] = abs((results[pred] - results[real]) / (results[real])) * 100 
-			
-			#remove outliers
-			trimmed_results = results[(np.abs(stats.zscore(results)) < 3).all(axis=1)]
-			avg_error = trimmed_results[err].mean()
-			print("Average error of %s is %.2f" % (outputs[i], avg_error))
-			np.append(case_errors, avg_error)
-			numOutliers = results.shape[0] - trimmed_results.shape[0]
-			print("Removed %d outliers: Average error of %s is %.2f" % (numOutliers, outputs[i], trimmed_results[err].mean()))
-
-		#print(results)
-		print(trimmed_results)
-		#write output to csv file
-		results.to_csv('./results_nn.csv', index=True) 
-		
-
-
-	analyzed_results['error'] = case_errors
-	print(analyzed_results)
-
-'''
