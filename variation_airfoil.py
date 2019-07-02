@@ -22,7 +22,7 @@ import csv
 #set U values at equal intervals between range
 speedOfSound = 340
 machs = arange(0.1, 1, 0.1)	#start, stop(exclusive), interval
-angles = arange(-20, 22.5, 2.5)	#start, stop(exclusive), interval
+angles = arange(-10, 11, 1)	#start, stop(exclusive), interval
 
 templateName = "airFoil2D"
 solver = "simpleFoam" 
