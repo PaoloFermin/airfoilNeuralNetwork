@@ -29,8 +29,8 @@ df_normalized['U'] = rescale(data['U'], -1, 1)
 df_normalized['angle'] = rescale(data['angle'], -1, 1)
 df_normalized['Ux'] = rescale(data['Ux'], -1, 1)
 df_normalized['Uy'] = rescale(data['Uy'], -1, 1)
-df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
-df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
+df_normalized['Cl'] = data['Cl']
+df_normalized['Cd'] = data['Cd']
 
 print("original data:\n")
 print(data)

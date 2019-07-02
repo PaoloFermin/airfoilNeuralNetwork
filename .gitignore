@@ -10,3 +10,6 @@ AirfoilParameterVariationLog
 *.foam
 *results
 *.csv
+gitkraken*
+*.zip
+optimized_airfoil_nn

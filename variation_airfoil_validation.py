@@ -26,6 +26,7 @@ angles = [-20, -15, 15, 20] 	#start, stop(exclusive), interval
 
 templateName = "airFoil2D"
 solver = "simpleFoam" 
+endTime = 1500
 
 #convert current case directory into a pyfoam-readable object
 #create archive directory to store results
@@ -56,6 +57,7 @@ for mach in machs:
 		
 		#edit controlDict to account for change in U
 		controlDict = ParsedParameterFile(path.join(clone.name,"system","controlDict"))
+		controlDict['endTime'] = endTime
 		controlDict["functions"]["forcesCoeffs"]["liftDir"] = Vector(-sin(radians(angle)), cos(radians(angle)), 0)
 		controlDict["functions"]["forcesCoeffs"]["dragDir"] = Vector(cos(radians(angle)), sin(radians(angle)), 0)
 		controlDict["functions"]["forcesCoeffs"]["magUInf"] = mach * speedOfSound
