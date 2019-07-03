@@ -12,4 +12,5 @@ AirfoilParameterVariationLog
 *.csv
 gitkraken*
 *.zip
-optimized_airfoil_nn
+optimized_airfoil_nn*
+*.swp

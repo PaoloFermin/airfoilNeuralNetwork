@@ -26,7 +26,7 @@ angles = [-20, -15, 15, 20] 	#start, stop(exclusive), interval
 
 templateName = "airFoil2D"
 solver = "simpleFoam" 
-endTime = 1500
+endTime = 2000
 
 #convert current case directory into a pyfoam-readable object
 #create archive directory to store results
