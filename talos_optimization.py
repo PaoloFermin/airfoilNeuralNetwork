@@ -15,6 +15,7 @@ import os
 #remove pesky deprecation warnings which I should probably care about but meh
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
+
 #import tensorflow_model_optimization as tfmot
 
 #########################################
@@ -26,10 +27,10 @@ outputs = ['Cd', 'Cl']
 
 #create hyperparameter dictionary
 p = {
-	'first_neuron': [4, 8, 16, 32],
-	'second_neuron': [8, 16, 32],
-	'losses': ['mean_absolute_error', 'mean_squared_error'],
-	'epochs': [15000],
+	'first_neuron': [4, 8, 16, 24, 32],
+	'second_neuron': [8, 16, 24, 32],
+	'losses': ['mean_squared_error'],
+	'epochs': [10000],
  	'lr': [0.001, 0.0001]
 }
 	
@@ -38,13 +39,6 @@ from keras.callbacks import EarlyStopping, TensorBoard
 early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=200) 
 
 #create log
-i = 0
-while os.path.exists('./logs_nn/%s' % i):
-	i += 1
-logdir = './logs_nn/%s' % i
-tb = TensorBoard(log_dir=logdir)
-print('\n Run number %d \n' % i)
-
 #PREPROCESS DATA
 data = pd.read_csv('results.csv')
 #print(data)
@@ -66,8 +60,8 @@ df_normalized['Cl'] = data['Cl']
 #df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
 #df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
 
-train_x = df_normalized[inputs].values
-train_y = df_normalized[outputs].values	#the target column
+train_x = df_normalized[inputs]
+train_y = df_normalized[outputs]	#the target column
 
 #split between training and testing data
 from sklearn.model_selection import train_test_split 
@@ -77,7 +71,8 @@ x_train, x_test, y_train, y_test = train_test_split(train_x, train_y, test_size 
 #x_train = x_train.values
 #y_train = y_train.values
 #print(type(x_train))
-
+print(y_test)
+print(type(y_test))
 
 #get number of columns in training data
 n_cols = train_x.shape[1]
@@ -99,25 +94,37 @@ def create_model(x_train, y_train, x_test, y_test, params):
 	#compile model
 	model.compile(optimizer=adam, loss=params['losses'])
 	print(model.summary())
+	
+	
+
+	i = 0
+	while os.path.exists('./logs_nn/%s' % i):
+		i += 1
+	logdir = './logs_nn/%s' % i
+	tb = TensorBoard(log_dir=logdir)
+	print('\n Run number %d \n' % i)
 
 	#train model
 	fit = model.fit(x_train, y_train, 
 		validation_split=0.2, 
 		epochs=params['epochs'], 
 		verbose=False,
-		callbacks=[live()]
+		callbacks=[early_stopping_monitor, tb]
 	)
-
+	
 	return fit, model
 
 
+i = 0
+while os.path.exists('./talos_airfoil_%s.csv' % i):
+	i += 1
 t = ta.Scan(
-	x=x_train, 
-	y=y_train, 
+	x=x_train.values, 
+	y=y_train.values, 
 	params=p, 
 	model=create_model,
 	dataset_name='talos_airfoil',
-	experiment_no='1',
+	experiment_no=str(i),
 	reduction_method='correlation', 
 	reduction_interval=25, 
 	reduction_metric='val_loss',
@@ -155,8 +162,22 @@ print(t.best_model(metric='val_loss'))
 e = Evaluate(t)
 
 for loss in p['losses']:
-	print("mean error for %s is %.6f" % (loss, mean(e.evaluate(x_test, y_test, model_id=best_model_by_loss(t, 'val_loss', loss), metric='val_loss', asc=True, mode='regression', folds=10))))
+	evaluation = e.evaluate(x_test.values, y_test.values, model_id=best_model_by_loss(t, 'val_loss', loss), metric='val_loss', asc=True, mode='regression', folds=10)
+	print("predictions for %s is " % loss)
+	print(evaluation)
+	print("mean error for %s is %.6f" % (loss, mean(evaluation)))
 
-Deploy(t, 'optimized_airfoil_nn', metric='val_loss', asc=True)
 
+i = 0
+while os.path.exists('./optimized_airfoil_nn_%s.zip' % i):
+	i += 1
+deploy_dir = './optimized_airfoil_nn_%s' % i
+Deploy(t, deploy_dir, metric='val_loss', asc=True)
+
+validation_data = x_test
+
+#get original y values
+temp = data.iloc[y_test.index.values,:]
+validation_data[['Cd', 'Cl']] = temp.loc[:, ['Cd', 'Cl']]
+validation_data.to_csv('./optimization_validation_data.csv')
 
