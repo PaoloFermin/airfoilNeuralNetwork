@@ -4,6 +4,7 @@ import matplotlib
 matplotlib.use('TkAgg')
 import os
 from matplotlib import pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 plt.switch_backend('TkAgg')
 print(plt.get_backend())
@@ -53,4 +54,10 @@ validation_df.plot(x='angle', y=['Cd', 'pred_Cd'])
 print(pred)
 
 print(validation_df)
+#plt.show()
+
+#threedee = plt.figure().gca(projection='3d')
+#threedee.plot_trisurf(validation_df['angle'], validation_df['U'], validation_df['pred_Cd'])
+#threedee.plot_trisurf(validation_df['angle'], validation_df['U'], validation_df['Cd'])
 plt.show()
+
