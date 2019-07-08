@@ -8,7 +8,14 @@ from matplotlib import pyplot as plt
 plt.switch_backend('TkAgg')
 print(plt.get_backend())
 
+def rescale(col, newMin, newMax, reverse=False, oldMin=-1, oldMax=1):
+	if reverse:
+		x = newMin + (((col - oldMin) * (newMax - newMin)) / (oldMax - oldMin))
+	else:		
+		x = newMin + (((col - col.min()) * (newMax - newMin)) / (col.max() - col.min()))
+	return x
 
+orig_df = pd.read_csv('results.csv')
 validation_df = pd.read_csv('optimization_validation_data.csv')
 validation_df.columns = ['case number', 'U', 'angle', 'Cd', 'Cl']
 
@@ -30,8 +37,8 @@ print("Cd predictions: ")
 print(pred[:,0])
 print("Cl predictions: ")
 print(pred[:, 1])
-validation_df['pred_Cd'] = pred[:, 1]
-validation_df['pred_Cl'] = pred[:, 0]
+validation_df['pred_Cd'] = rescale(pred[:, 1], orig_df['Cd'].min(), orig_df['Cd'].max(), reverse=True)
+validation_df['pred_Cl'] = rescale(pred[:, 0], orig_df['Cl'].min(), orig_df['Cl'].max(), reverse=True)
 
 
 validation_df['error_Cd'] = abs((validation_df['pred_Cd'] - validation_df['Cd']) / validation_df['Cd']) * 100

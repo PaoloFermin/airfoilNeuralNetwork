@@ -29,8 +29,8 @@ outputs = ['Cl', 'Cd']
 p = {
 	'first_neuron': [8, 16, 24, 32],
 	'second_neuron': [8, 16, 24, 32],
-	'third_neuron': [8, 16, 24, 32],
-	'losses': ['mean_absolute_error'],
+	#'third_neuron': [8, 16, 24, 32],
+	'losses': ['mean_squared_error'],
 	'epochs': [15000],
  	'lr': [0.0001]
 }
@@ -46,8 +46,11 @@ data = pd.read_csv('results.csv')
 
 
 
-def rescale(col, newMin, newMax, reverse=False, original=None):
-	x = newMin + (((col - col.min()) * (newMax - newMin)) / (col.max() - col.min()))
+def rescale(col, newMin, newMax, reverse=False, oldMin=-1, oldMax=1):
+	if reverse:
+		x = newMin + (((col - oldMin) * (newMax - newMin)) / (oldMax - oldMin))
+	else:		
+		x = newMin + (((col - col.min()) * (newMax - newMin)) / (col.max() - col.min()))
 	return x
 
 df_normalized = data.copy() #separate copy from original
@@ -55,8 +58,8 @@ df_normalized['U'] = rescale(data['U'], -1, 1)
 df_normalized['angle'] = rescale(data['angle'], -1, 1)
 df_normalized['Ux'] = rescale(data['Ux'], -1, 1)
 df_normalized['Uy'] = rescale(data['Uy'], -1, 1)
-df_normalized['Cd'] = data['Cd']
-df_normalized['Cl'] = data['Cl']
+df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
+df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
 
 #df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
 #df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
@@ -90,7 +93,7 @@ def create_model(x_train, y_train, x_test, y_test, params):
 	model = Sequential()
 	model.add(Dense(params['first_neuron'], kernel_initializer='normal', activation='relu', input_shape=(n_cols,))) 
 	model.add(Dense(params['second_neuron'], kernel_initializer='normal', activation='relu')) 
-	model.add(Dense(params['third_neuron'], kernel_initializer='normal', activation='relu'))
+	#model.add(Dense(params['third_neuron'], kernel_initializer='normal', activation='relu'))
 	model.add(Dense(len(outputs)))#output layer
 
 	#compile model

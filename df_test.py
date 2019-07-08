@@ -32,28 +32,30 @@ print("comparison:")
 print(comparison)
 '''
 
-def rescale(col, newMin, newMax):
+def rescale(col, oldMin, oldMax, newMin, newMax):
 	#minmaxscaler: x = newmin + (x - xmin)(newmax -newmin) / (xmax -xmin)
 	#print("scaling %s to min %d and max %d" % (col.head, newMin, newMax))	
-	x = newMin + (((col - col.min()) * (newMax - newMin)) / (col.max() - col.min()))
+	x = newMin + (((col - oldMin) * (newMax - newMin)) / (oldMax - oldMin))
 	#print(x)
 	return x
 
-
-validation_data = data.loc[:, ['Cd', 'Cl']].sample(frac=.2)
+data['Cd_scaled'] = rescale(data.loc[:,'Cd'], data.loc[:, 'Cd'].min(), data.loc[:, 'Cd'].max(), -1, 1)
+val_data = data.loc[:, ['Cd', 'Cd_scaled']].sample(frac=.2)
 print("validation data: ")
-sk_data = validation_data.copy()
+sk_data = val_data.copy()
 
-validation_data['Cd_scaled'] = rescale(validation_data.loc[:, 'Cd'], -1, 1)
-validation_data['Cd_unscaled'] = rescale(validation_data.loc[:, 'Cd_scaled'], validation_data['Cd'].min(), validation_data['Cd'].max())
-validation_data['Cd_error'] = abs((validation_data['Cd_unscaled'] - validation_data['Cd']) / (validation_data['Cd'])) * 100 
+#val_data['Cd_scaled'] = rescale(val_data.loc[:, 'Cd'], -1, 1)
+val_data['Cd_unscaled'] = rescale(val_data.loc[:, 'Cd_scaled'], -1, 1, data['Cd'].min(), data['Cd'].max())
+val_data['Cd_error'] = abs((val_data['Cd_unscaled'] - val_data['Cd']) / (val_data['Cd'])) * 100 
 
-validation_data['Cl_scaled'] = rescale(validation_data.loc[:, 'Cl'], -1, 1)
-validation_data['Cl_unscaled'] = rescale(validation_data.loc[:, 'Cl_scaled'], validation_data['Cl'].min(), validation_data['Cl'].max())
-validation_data['Cl_error'] = abs((validation_data['Cl_unscaled'] - validation_data['Cl']) / (validation_data['Cl'])) * 100 
+'''
+val_data['Cl_scaled'] = rescale(val_data.loc[:, 'Cl'], -1, 1)
+val_data['Cl_unscaled'] = rescale(val_data.loc[:, 'Cl_scaled'], val_data['Cl'].min(), val_data['Cl'].max())
+val_data['Cl_error'] = abs((val_data['Cl_unscaled'] - val_data['Cl']) / (val_data['Cl'])) * 100 
+'''
 
-validation_data = validation_data[['Cd', 'Cd_scaled', 'Cd_unscaled', 'Cd_error', 'Cl', 'Cl_unscaled', 'Cl_error']]
-print(validation_data)
+val_data = val_data[['Cd', 'Cd_scaled', 'Cd_unscaled', 'Cd_error']]
+print(val_data)
 
 '''
 from sklearn.preprocessing import MinMaxScaler
