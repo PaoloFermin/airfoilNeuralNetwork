@@ -23,15 +23,16 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
 #knobs
 inputs = ['U', 'angle']
-outputs = ['Cd', 'Cl']
+outputs = ['Cl', 'Cd']
 
 #create hyperparameter dictionary
 p = {
-	'first_neuron': [4, 8, 16, 24, 32],
+	'first_neuron': [8, 16, 24, 32],
 	'second_neuron': [8, 16, 24, 32],
-	'losses': ['mean_squared_error'],
-	'epochs': [10000],
- 	'lr': [0.001, 0.0001]
+	'third_neuron': [8, 16, 24, 32],
+	'losses': ['mean_absolute_error'],
+	'epochs': [15000],
+ 	'lr': [0.0001]
 }
 	
 #add callbacks
@@ -89,6 +90,7 @@ def create_model(x_train, y_train, x_test, y_test, params):
 	model = Sequential()
 	model.add(Dense(params['first_neuron'], kernel_initializer='normal', activation='relu', input_shape=(n_cols,))) 
 	model.add(Dense(params['second_neuron'], kernel_initializer='normal', activation='relu')) 
+	model.add(Dense(params['third_neuron'], kernel_initializer='normal', activation='relu'))
 	model.add(Dense(len(outputs)))#output layer
 
 	#compile model
