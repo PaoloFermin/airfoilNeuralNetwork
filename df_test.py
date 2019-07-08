@@ -55,13 +55,14 @@ validation_data['Cl_error'] = abs((validation_data['Cl_unscaled'] - validation_d
 validation_data = validation_data[['Cd', 'Cd_scaled', 'Cd_unscaled', 'Cd_error', 'Cl', 'Cl_unscaled', 'Cl_error']]
 print(validation_data)
 
+'''
 from sklearn.preprocessing import MinMaxScaler
 
 scaler = MinMaxScaler(feature_range=(-1, 1))
 sk_data['Cd_scaled'] = scaler.fit_transform(sk_data)
 sk_data['Cd_unscaled'] = scaler.inverse_transform(sk_data)
 print(sk_data)
-
+'''
 
 '''
 scaled_data = rescale(data[target], -1, 1)
