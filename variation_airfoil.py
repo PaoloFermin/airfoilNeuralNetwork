@@ -1,5 +1,8 @@
-from os import path
-from os import getcwd 
+from datetime import datetime
+
+start_time = datetime.now()
+
+from os import path, getcwd
 from PyFoam.RunDictionary.SolutionDirectory import SolutionDirectory
 from PyFoam.RunDictionary.ParsedParameterFile import ParsedParameterFile
 from PyFoam.Basics.DataStructures import Vector
@@ -7,10 +10,11 @@ from PyFoam.Error import error
 
 #import necessary runners here
 from PyFoam.Execution.BasicRunner import BasicRunner
-from PyFoam.Execution.ConvergenceRunner import ConvergenceRunner
 
-#import necessary analyzers here
-from PyFoam.LogAnalysis.BoundingLogAnalyzer import BoundingLogAnalyzer
+from PyFoam.Applications.Decomposer import Decomposer
+from PyFoam.Applications.CaseReport import CaseReport
+from PyFoam.Execution.ParallelExecution import LAMMachine
+num_procs = 4
 
 from math import cos
 from math import sin
@@ -39,40 +43,46 @@ writer = csv.writer(logTable)
 writer.writerow(['Ux', 'Uy', 'U', 'angle', 'Cd', 'Cl'])
 logTable.close()
 
+copydir = 'openfoamruns'
+base_case = 'airFoil2D'
+
 for mach in machs:
 	for angle in angles:
 		#clone template 
 		#copies directories 0, constant, and system
-		cloneName = "airfoil-u%.1f-a%0.1f"% (mach, angle)
-		clone = dire.cloneCase(cloneName)
+		clone_name = "/%s/airfoil-u%.1f-a%0.1f" % (path.join(getcwd(), copy_dir), mach, angle)
+		clone = dire.cloneCase(clone_name)
 		
 		Ux = mach * speedOfSound * cos(radians(angle))
 		Uy = mach * speedOfSound * sin(radians(angle))
 
 		#read correct parameter file and change parameter
-		velBC = ParsedParameterFile(path.join(clone.name,"0","U"))
+		velBC = ParsedParameterFile(path.join(clone_name,"0","U"))
 		velBC["internalField"].setUniform(Vector(Ux, Uy, 0))
 		velBC.writeFile()
 		
 		#edit controlDict to account for change in U
-		controlDict = ParsedParameterFile(path.join(clone.name,"system","controlDict"))
+		controlDict = ParsedParameterFile(path.join(clone_name,"system","controlDict"))
 		controlDict["functions"]["forcesCoeffs"]["liftDir"] = Vector(-sin(radians(angle)), cos(radians(angle)), 0)
 		controlDict["functions"]["forcesCoeffs"]["dragDir"] = Vector(cos(radians(angle)), sin(radians(angle)), 0)
 		controlDict["functions"]["forcesCoeffs"]["magUInf"] = mach * speedOfSound
 		controlDict.writeFile()	
 	
-		print("cwd: " + getcwd() )
-		#print("case name: " + caseName)	
-		
-		#run blockmesh
-		foamRun = BasicRunner(argv=[solver, "-case", clone.name], logname="simpleFoam.log")
+		#implement parallelization
+		print('Decomposing...')
+		Decomposer(args=['--progress', clone_name, num_procs])
+		CaseReport(args=['--decomposition', clone_name])
+		machine = LAMMachine(nr=num_procs)
+
+		#run simpleFoam
+		foamRun = BasicRunner(argv=[solver, "-case", clone_name], logname="simpleFoam")
 		print("Running simpleFoam")
 		foamRun.start()
 		if not foamRun.runOK():
 			error("There was a problem with simpleFoam")
 		
 		#get headers and last line of postprocessing file
-		with open("./" + cloneName + "/postProcessing/forcesCoeffs/0/coefficient.dat", "rb") as table:
+		with open("./" + clone_name + "/postProcessing/forcesCoeffs/0/coefficient.dat", "rb") as table:
 			last = table.readlines()[-1].decode()
 			print("last line of coefficients" + last)		
 			splitLast = last.split()
