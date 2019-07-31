@@ -1,6 +1,6 @@
 airfoil-*
 logs_nn
-old_logs
+*logs
 test_nn
 testSeparator
 results*
