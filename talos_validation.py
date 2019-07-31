@@ -28,10 +28,10 @@ x_val = validation_df[['U','angle']]
 y_val = validation_df[['Cd', 'Cl']]
 
 i = 0
-while os.path.exists('optimized_airfoil_nn_%s.zip' % i):
+while os.path.exists('./optimized_networks/optimized_airfoil_nn_%s.zip' % i):
 	i += 1
 i -= 1
-net = Restore('optimized_airfoil_nn_%s.zip'%i)
+net = Restore('./optimized_networks/optimized_airfoil_nn_%s.zip'%i)
 
 pred = net.model.predict(x_val)
 print("Cd predictions: ")

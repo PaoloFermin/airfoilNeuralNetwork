@@ -121,14 +121,14 @@ def create_model(x_train, y_train, x_test, y_test, params):
 
 
 i = 0
-while os.path.exists('./talos_airfoil_%s.csv' % i):
+while os.path.exists('./scan_results/talos_airfoil_%s.csv' % i):
 	i += 1
 t = ta.Scan(
 	x=x_train.values, 
 	y=y_train.values, 
 	params=p, 
 	model=create_model,
-	dataset_name='talos_airfoil',
+	dataset_name='./scan_results/talos_airfoil',
 	experiment_no=str(i),
 	reduction_method='correlation', 
 	reduction_interval=25, 
@@ -176,7 +176,7 @@ for loss in p['losses']:
 i = 0
 while os.path.exists('./optimized_airfoil_nn_%s.zip' % i):
 	i += 1
-deploy_dir = './optimized_airfoil_nn_%s' % i
+deploy_dir = './optimized_networks/optimized_airfoil_nn_%s' % i
 Deploy(t, deploy_dir, metric='val_loss', asc=True)
 
 validation_data = x_test
@@ -184,5 +184,5 @@ validation_data = x_test
 #get original y values
 temp = data.iloc[y_test.index.values,:]
 validation_data[['Cd', 'Cl']] = temp.loc[:, ['Cd', 'Cl']]
-validation_data.to_csv('./optimization_validation_data.csv')
+validation_data.to_csv('./validation_data.csv')
 
