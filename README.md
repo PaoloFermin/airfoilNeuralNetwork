@@ -32,7 +32,7 @@ The required packages are:
 To create training data, run
 
 ```
-python parameter\_variation\_airfoil.py
+python parameter_variation_airfoil.py
 ```
 
 There are two lists within this script which will let you specify the values for U and AoA. The script uses the PyFoam library to modify these values within `0/U` of the airFoil2D "base" OpenFOAM directory, create a copy of that directory, and run simpleFoam from within the copy. The results are scraped from the `postprocessing/` folder of each "copy" directory and stored in `results.csv` within the parent directory. Once the test is done, the copy directories can be deleted for cleanliness. 
@@ -54,7 +54,7 @@ This script first splits the data from `results.csv` into training and validatio
 The progress of training can be visualized nicely by running 
 
 ```
-tensorboard --logdir logs_nn
+tensorboard --logdir training_logs
 ```
 
 If this is successful, it will display a port which you can connect to through the browser to visualize the training. Typically this is `localhost:6006/`. Each iteration of neural network is stored in a separate numbered directory within the `logs_nn` directory, and thus tensorboard dedicates a separate loss and val_loss graph to each. 
