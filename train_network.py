@@ -15,7 +15,6 @@ import os
 #remove pesky deprecation warnings which I should probably care about but meh
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-
 #import tensorflow_model_optimization as tfmot
 
 #########################################
@@ -44,8 +43,6 @@ early_stopping_monitor = EarlyStopping(monitor='val_loss', patience=200)
 data = pd.read_csv('results.csv')
 #print(data)
 
-
-
 def rescale(col, newMin, newMax, reverse=False, oldMin=-1, oldMax=1):
 	if reverse:
 		x = newMin + (((col - oldMin) * (newMax - newMin)) / (oldMax - oldMin))
@@ -60,9 +57,6 @@ df_normalized['Ux'] = rescale(data['Ux'], -1, 1)
 df_normalized['Uy'] = rescale(data['Uy'], -1, 1)
 df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
 df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
-
-#df_normalized['Cl'] = rescale(data['Cl'], -1, 1)
-#df_normalized['Cd'] = rescale(data['Cd'], -1, 1)
 
 train_x = df_normalized[inputs]
 train_y = df_normalized[outputs]	#the target column
@@ -101,7 +95,7 @@ def create_model(x_train, y_train, x_test, y_test, params):
 	print(model.summary())
 	
 	
-
+	#log to tensorboard
 	i = 0
 	while os.path.exists('./logs_nn/%s' % i):
 		i += 1
@@ -130,8 +124,9 @@ t = ta.Scan(
 	model=create_model,
 	dataset_name='./scan_results/talos_airfoil',
 	experiment_no=str(i),
+	#at every 25th iteration, reduce the number of architectural possibilities to check
 	reduction_method='correlation', 
-	reduction_interval=25, 
+	reduction_interval=25,  
 	reduction_metric='val_loss',
 	reduce_loss=True
 )
@@ -149,6 +144,7 @@ results = r.table(metric='val_loss', ascending=True)
 print(results)	#returns a dataframe
 #r.plot_line()
 
+#if using several loss functions, grab the best one of each model
 def best_model_by_loss(scan, metric, loss):
 
 	isolated_df = scan.data.loc[scan.data['losses']==loss,:]
@@ -166,6 +162,7 @@ print(t.best_model(metric='val_loss'))
 #evaluate models based on test dataset
 e = Evaluate(t)
 
+#print losses for each loss function tested
 for loss in p['losses']:
 	evaluation = e.evaluate(x_test.values, y_test.values, model_id=best_model_by_loss(t, 'val_loss', loss), metric='val_loss', asc=True, mode='regression', folds=10)
 	print("predictions for %s is " % loss)
@@ -179,10 +176,10 @@ while os.path.exists('./optimized_airfoil_nn_%s.zip' % i):
 deploy_dir = './optimized_networks/optimized_airfoil_nn_%s' % i
 Deploy(t, deploy_dir, metric='val_loss', asc=True)
 
-validation_data = x_test
+test_data = x_test
 
-#get original y values
+#get real test y values and store in csv for later use 
 temp = data.iloc[y_test.index.values,:]
-validation_data[['Cd', 'Cl']] = temp.loc[:, ['Cd', 'Cl']]
-validation_data.to_csv('./validation_data.csv')
+test_data[['Cd', 'Cl']] = temp.loc[:, ['Cd', 'Cl']]
+test_data.to_csv('./test_data.csv')
 
