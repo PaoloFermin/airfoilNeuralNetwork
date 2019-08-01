@@ -46,7 +46,7 @@ To run the neural network training, run
 python train_network.py
 ```
 
-This script first splits the data from `results.csv` into training and validation data. The validation data is stored separately in `test_data.csv` and not used within training. Then the script uses the Talos library to iterate through the training of neural networks with varying hyperparameters. The hyperparameters are specified in the `p` dictionary within the script, and the function `Scan()` performs the iterative training. Once complete, the net with the lowest loss function will be stored in a zip folder `optimized_airfoil_nn_{case number}.zip`. 
+This script first splits the data from `results.csv` into training and test data. The test data is stored separately in `test_data.csv` and not used within training. Then the script uses the Talos library to iterate through the training of neural networks with varying hyperparameters. The hyperparameters are specified in the `p` dictionary within the script, and the function `Scan()` performs the iterative training. Once complete, the net with the lowest loss function will be stored in a zip folder `optimized_airfoil_nn_{case number}.zip`. 
 
 
 ## Visualization and Testing
