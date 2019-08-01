@@ -99,7 +99,7 @@ def create_model(x_train, y_train, x_test, y_test, params):
 	i = 0
 	while os.path.exists('./logs_nn/%s' % i):
 		i += 1
-	logdir = './logs_nn/%s' % i
+	logdir = './training_logs/%s' % i
 	tb = TensorBoard(log_dir=logdir)
 	print('\n Run number %d \n' % i)
 
