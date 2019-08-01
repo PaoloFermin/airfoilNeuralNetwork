@@ -43,7 +43,7 @@ writer = csv.writer(logTable)
 writer.writerow(['Ux', 'Uy', 'U', 'angle', 'Cd', 'Cl'])
 logTable.close()
 
-copydir = 'openfoamruns'
+copy_dir = 'openfoamruns'
 base_case = 'airFoil2D'
 
 for mach in machs:
@@ -82,7 +82,7 @@ for mach in machs:
 			error("There was a problem with simpleFoam")
 		
 		#get headers and last line of postprocessing file
-		with open("./" + clone_name + "/postProcessing/forcesCoeffs/0/coefficient.dat", "rb") as table:
+		with open(path.join(clone_name, 'postProcessing','forcesCoeffs','0','coefficient.dat'), "rb") as table:
 			last = table.readlines()[-1].decode()
 			print("last line of coefficients" + last)		
 			splitLast = last.split()
@@ -91,13 +91,10 @@ for mach in machs:
 			Cl = float(splitLast[3])
 			table.close()
 
-		with open("AirfoilParameterVariationLog", "a") as log:
-			log.write('\nUx = %0.4f, Uy = %0.4f, Cd = %0.4f, Cl = %0.4f' % (Ux, Uy, Cd, Cl))
-			log.close()
-
 		with open("results.csv", "a") as logTable: 
 			output = [Ux, Uy, mach*speedOfSound, angle, Cd, Cl]
 			writer = csv.writer(logTable)
 			writer.writerow(output)
 			logTable.close()
 
+print('Execution time: {}'.format(datetime.now() - start_time))
