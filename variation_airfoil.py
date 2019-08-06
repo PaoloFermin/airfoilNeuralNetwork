@@ -36,8 +36,6 @@ solver = "simpleFoam"
 dire = SolutionDirectory(templateName, archive=None)
 
 #create empty log file
-log = open("AirfoilParameterVariationLog", "w")
-log.close()
 logTable = open("results.csv", "w")
 writer = csv.writer(logTable)
 writer.writerow(['Ux', 'Uy', 'U', 'angle', 'Cd', 'Cl'])
@@ -91,6 +89,7 @@ for mach in machs:
 			Cl = float(splitLast[3])
 			table.close()
 
+		#log relevant results to be read later for training
 		with open("results.csv", "a") as logTable: 
 			output = [Ux, Uy, mach*speedOfSound, angle, Cd, Cl]
 			writer = csv.writer(logTable)
